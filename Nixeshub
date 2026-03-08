@@ -1,87 +1,101 @@
+--[[
+    NIXES HUB - BLOX FRUITS EDITION
+    Developer: Sinklyy (DARAK166)
+    Color Palette: Cyan (#52fbf6)
+]]
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 
--- Переменные для функций
-local _G = _G or {}
+-- Глобальные настройки
 _G.AutoFarmNearest = false
-_G.FarmRadius = 500 -- По умолчанию 500m
+_G.FarmRadius = 500 -- Начальный радиус
 
--- СОЗДАНИЕ ИНТЕРФЕЙСА
+-- СОЗДАНИЕ GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NixesHub"
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
--- Главное окно
+-- Главная панель
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 450, 0, 300)
 MainFrame.Position = UDim2.new(0.5, -225, 0.5, -150)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-MainFrame.BackgroundTransparency = 0.2
+MainFrame.BackgroundTransparency = 0.1
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner", MainFrame)
-Corner.CornerRadius = UDim.new(0, 10)
+Corner.CornerRadius = UDim.new(0, 12)
 
 local Stroke = Instance.new("UIStroke", MainFrame)
 Stroke.Color = Color3.fromHex("#52fbf6")
 Stroke.Thickness = 2
+Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 -- Заголовок
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(1, 0, 0, 45)
 Title.BackgroundTransparency = 1
-Title.Text = "NIXES HUB | BEYOND LIMITS"
+Title.Text = "NIXES HUB | BLOX FRUITS"
 Title.TextColor3 = Color3.fromHex("#52fbf6")
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
+Title.TextSize = 20
 
--- КНОПКА: Auto Farm Nearest
+--- КНОПКА: Auto Farm Nearest ---
 local FarmBtn = Instance.new("TextButton", MainFrame)
 FarmBtn.Name = "AutoFarmBtn"
-FarmBtn.Size = UDim2.new(0, 200, 0, 40)
-FarmBtn.Position = UDim2.new(0, 20, 0, 60)
-FarmBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+FarmBtn.Size = UDim2.new(0, 220, 0, 45)
+FarmBtn.Position = UDim2.new(0, 20, 0, 70)
+FarmBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 FarmBtn.Text = "Auto Farm Nearest: OFF"
-FarmBtn.TextColor3 = Color3.new(1,1,1)
-FarmBtn.Font = Enum.Font.Gotham
+FarmBtn.TextColor3 = Color3.new(1, 1, 1)
+FarmBtn.Font = Enum.Font.GothamSemibold
 FarmBtn.TextSize = 14
 Instance.new("UICorner", FarmBtn)
 
--- МЕНЮ НАСТРОЕК (Слайдер)
+local FarmStroke = Instance.new("UIStroke", FarmBtn)
+FarmStroke.Color = Color3.fromRGB(60, 60, 70)
+FarmStroke.Thickness = 1
+
+--- ОКНО НАСТРОЕК (Слайдер) ---
 local SettingsFrame = Instance.new("Frame", MainFrame)
-SettingsFrame.Size = UDim2.new(0, 180, 0, 80)
-SettingsFrame.Position = UDim2.new(0, 240, 0, 60)
-SettingsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+SettingsFrame.Size = UDim2.new(0, 170, 0, 90)
+SettingsFrame.Position = UDim2.new(0, 255, 0, 70)
+SettingsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 SettingsFrame.Visible = false
 Instance.new("UICorner", SettingsFrame)
+Instance.new("UIStroke", SettingsFrame).Color = Color3.fromHex("#52fbf6")
 
 local SliderLabel = Instance.new("TextLabel", SettingsFrame)
-SliderLabel.Size = UDim2.new(1, 0, 0, 30)
+SliderLabel.Size = UDim2.new(1, 0, 0, 35)
 SliderLabel.Text = "Radius: 500m"
-SliderLabel.TextColor3 = Color3.new(1,1,1)
+SliderLabel.TextColor3 = Color3.new(1, 1, 1)
 SliderLabel.BackgroundTransparency = 1
+SliderLabel.Font = Enum.Font.Gotham
 
 local SliderBar = Instance.new("Frame", SettingsFrame)
-SliderBar.Size = UDim2.new(0, 150, 0, 10)
-SliderBar.Position = UDim2.new(0.5, -75, 0.7, 0)
-SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+SliderBar.Size = UDim2.new(0, 140, 0, 6)
+SliderBar.Position = UDim2.new(0.5, -70, 0.7, 0)
+SliderBar.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+Instance.new("UICorner", SliderBar)
 
 local SliderBtn = Instance.new("TextButton", SliderBar)
-SliderBtn.Size = UDim2.new(0, 20, 0, 20)
-SliderBtn.Position = UDim2.new(0.4, 0, -0.5, 0)
+SliderBtn.Size = UDim2.new(0, 18, 0, 18)
+SliderBtn.Position = UDim2.new(0.4, 0, -1, 0)
 SliderBtn.BackgroundColor3 = Color3.fromHex("#52fbf6")
 SliderBtn.Text = ""
 Instance.new("UICorner", SliderBtn).CornerRadius = UDim.new(1, 0)
 
 --- ЛОГИКА ---
 
--- 1. Перетаскивание меню
+-- Перетаскивание меню
 local dragging, dragInput, dragStart, startPos
 MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -99,7 +113,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
 
--- 2. Слайдер радиуса
+-- Управление слайдером
 local isSliding = false
 SliderBtn.MouseButton1Down:Connect(function() isSliding = true end)
 UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then isSliding = false end end)
@@ -107,34 +121,36 @@ UserInputService.InputEnded:Connect(function(input) if input.UserInputType == En
 RunService.RenderStepped:Connect(function()
     if isSliding then
         local pos = math.clamp((mouse.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
-        SliderBtn.Position = UDim2.new(pos, -10, -0.5, 0)
+        SliderBtn.Position = UDim2.new(pos, -9, -1, 0)
         _G.FarmRadius = math.floor(100 + (pos * 900))
         SliderLabel.Text = "Radius: ".._G.FarmRadius.."m"
     end
 end)
 
--- 3. Открытие настроек по правой кнопке мыши
+-- Открытие настроек по правой кнопке мыши
 FarmBtn.MouseButton2Click:Connect(function()
     SettingsFrame.Visible = not SettingsFrame.Visible
 end)
 
--- 4. Переключатель функции
+-- Переключатель функции (Левая кнопка)
 FarmBtn.MouseButton1Click:Connect(function()
     _G.AutoFarmNearest = not _G.AutoFarmNearest
     FarmBtn.Text = _G.AutoFarmNearest and "Auto Farm Nearest: ON" or "Auto Farm Nearest: OFF"
-    FarmBtn.TextColor3 = _G.AutoFarmNearest and Color3.fromHex("#52fbf6") or Color3.new(1,1,1)
+    FarmBtn.TextColor3 = _G.AutoFarmNearest and Color3.fromHex("#52fbf6") or Color3.new(1, 1, 1)
 end)
 
--- 5. ФУНКЦИЯ ПОИСКА БЛИЖАЙШЕГО NPC
+--- ФУНКЦИЯ ПОИСКА БЛИЖАЙШЕГО NPC ---
 local function getNearestEnemy()
     local closest = nil
     local dist = _G.FarmRadius
     
-    -- Ищем во всем Workspace (для универсальности)
+    -- Проходим по всем объектам в Workspace
     for _, v in pairs(game.Workspace:GetDescendants()) do
+        -- Проверяем наличие гуманоида (NPC) и жизни
         if v:IsA("Humanoid") and v.Parent:FindFirstChild("HumanoidRootPart") then
             local npc = v.Parent
-            if npc.Name ~= player.Name and v.Health > 0 then
+            -- Не выбираем себя и проверяем здоровье
+            if npc ~= player.Character and v.Health > 0 then
                 local d = (player.Character.HumanoidRootPart.Position - npc.HumanoidRootPart.Position).Magnitude
                 if d < dist then
                     dist = d
@@ -146,15 +162,15 @@ local function getNearestEnemy()
     return closest
 end
 
--- 6. Основной цикл работы
-spawn(function()
-    while wait(0.1) do
-        if _G.AutoFarmNearest and player.Character then
+--- ЦИКЛ ВЫПОЛНЕНИЯ ---
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if _G.AutoFarmNearest and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local target = getNearestEnemy()
             if target then
-                -- Логика перемещения к NPC
+                -- Бежим к NPC
                 player.Character.Humanoid:MoveTo(target.HumanoidRootPart.Position)
-                -- Здесь можно добавить вызов твоей функции атаки (RemoteEvent)
             end
         end
     end
