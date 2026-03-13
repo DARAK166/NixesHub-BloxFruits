@@ -1,259 +1,138 @@
---[[
-    ╔══════════════════════════════════════╗
-    ║       NIXES HUB - BLOX FRUITS        ║
-    ║      Liquid Glass UI v2.0            ║
-    ╚══════════════════════════════════════╝
-]]
+-- NixesHub | Blox Fruits
+-- basic hub framework
 
--- Services
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
 
--- Remote references
-local Remotes = ReplicatedStorage:WaitForChild("Remotes", 10)
-local CommF = Remotes and Remotes:FindFirstChild("CommF_") or nil
-local CommE = Remotes and Remotes:FindFirstChild("CommE_") or nil
-
--- Config
-_G.NixesConfig = {
-    AutoFarm = false,
-    AutoFarmLevel = true,
-    AutoFarmFast = false,
-    AutoBounty = false,
-    AutoBoss = false,
-    AutoSeaBeast = false,
-    AutoRipIndra = false,
-    AutoElite = false,
-    AutoFarmFruit = false,
-    AutoSaber = false,
-    TPtoMobs = false,
-    NoClip = false,
-    WhiteScreen = false,
-    InfStamina = false,
-    InfOxygen = false,
-    NoDrown = false,
-    WalkSpeed = 16,
-    JumpPower = 50,
-    SelectWeapon = "Melee",
-    SelectIsland = "Middle Town",
-    BringMobs = true,
-    BringRange = 300,
-    MobDistance = 300,
-    AutoStats = false,
-    StatsType = "Melee",
-    SafeMode = false,
-    AutoHaki = true,
-    GodMode = false,
-    AutoSuperhuman = false,
-    AutoDeathStep = false,
-    AutoSharkman = false,
-    AutoElectricClaw = false,
-    AutoDragonTalon = false,
-    AutoGodHuman = false,
-    AutoBartilo = false,
-    AutoCursedDualKatana = false,
-    SelectTPMethod = "Upper",
-    AutoFarmBone = false,
-    AutoFarmEctoplasm = false,
-    AutoFarmCakePrince = false,
-}
-
--- ══════════════════════════════════
---  LIQUID GLASS UI SYSTEM
--- ══════════════════════════════════
-
+-- UI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NixesHub_GlassUI"
+ScreenGui.Name = "NixesHub"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game.CoreGui
 
-if syn and syn.protect_gui then
-    syn.protect_gui(ScreenGui)
-    ScreenGui.Parent = game:GetService("CoreGui")
-else
-    ScreenGui.Parent = game:GetService("CoreGui")
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0,420,0,260)
+Main.Position = UDim2.new(0.5,-210,0.5,-130)
+Main.BackgroundColor3 = Color3.fromRGB(25,25,35)
+Main.BackgroundTransparency = 0.25
+Main.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner",Main)
+UICorner.CornerRadius = UDim.new(0,14)
+
+local UIStroke = Instance.new("UIStroke",Main)
+UIStroke.Color = Color3.fromRGB(120,170,255)
+UIStroke.Transparency = 0.4
+
+local UIGradient = Instance.new("UIGradient",Main)
+UIGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0,Color3.fromRGB(80,120,255)),
+    ColorSequenceKeypoint.new(1,Color3.fromRGB(170,120,255))
+}
+UIGradient.Rotation = 45
+
+-- drag
+local dragging, dragInput, dragStart, startPos
+Main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Main.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- title
+local Title = Instance.new("TextLabel")
+Title.Parent = Main
+Title.Size = UDim2.new(1,0,0,40)
+Title.BackgroundTransparency = 1
+Title.Text = "NixesHub | Blox Fruits"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+
+-- button creator
+local function CreateButton(name,pos,callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Parent = Main
+    Btn.Size = UDim2.new(0,180,0,40)
+    Btn.Position = pos
+    Btn.Text = name
+    Btn.BackgroundColor3 = Color3.fromRGB(40,40,60)
+    Btn.TextColor3 = Color3.new(1,1,1)
+    Btn.Font = Enum.Font.Gotham
+    Btn.TextScaled = true
+
+    local c = Instance.new("UICorner",Btn)
+    c.CornerRadius = UDim.new(0,10)
+
+    Btn.MouseButton1Click:Connect(callback)
 end
 
--- Glass Effect Creator
-local function createGlass(parent, c, a, r)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1,0,1,0)
-    frame.Position = UDim2.new(0,0,0,0)
-    frame.BackgroundColor3 = c or Color3.fromRGB(20,20,35)
-    frame.BackgroundTransparency = a or 0.15
-    frame.BorderSizePixel = 0
-    frame.Parent = parent
+-- functions
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, r or 12)
-    corner.Parent = frame
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(80,120,255)
-    stroke.Thickness = 1.2
-    stroke.Transparency = 0.4
-    stroke.Parent = frame
-
-    -- Glass blur
-    local blur = Instance.new("ImageLabel")
-    blur.Image = "rbxassetid://5554236805"
-    blur.ImageColor3 = Color3.fromRGB(30,40,70)
-    blur.ImageTransparency = 0.65
-    blur.ScaleType = Enum.ScaleType.Crop
-    blur.Size = UDim2.new(1.2,0,1.2,0)
-    blur.Position = UDim2.new(-0.1,0,-0.1,0)
-    blur.BackgroundTransparency = 1
-    blur.BorderSizePixel = 0
-    blur.ZIndex = -1
-    blur.Parent = frame
-    blur.Name = "GlassNoise"
-
-    -- Animated stroke
+-- Fast Attack
+CreateButton("Fast Attack",UDim2.new(0,20,0,60),function()
     spawn(function()
-        while frame and frame.Parent do
-            local t = tick() * 0.5
-            stroke.Color = Color3.fromHSV(t % 1, 0.6, 1)
-            RunService.RenderStepped:Wait()
+        while task.wait() do
+            pcall(function()
+                game:GetService("ReplicatedStorage").Remotes.Combat:FireServer()
+            end)
         end
     end)
+end)
 
-    return frame
-end
+-- Auto Farm (simple NPC farm)
+CreateButton("Auto Farm",UDim2.new(0,220,0,60),function()
+    spawn(function()
+        while task.wait() do
+            pcall(function()
+                for _,v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame =
+                            v.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+                    end
+                end
+            end)
+        end
+    end)
+end)
 
--- Main Window
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainWindow"
-MainFrame.Size = UDim2.new(0, 620, 0, 460)
-MainFrame.Position = UDim2.new(0.5, -310, 0.5, -230)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15,15,30)
-MainFrame.BackgroundTransparency = 0.1
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui
+-- Auto Quest
+CreateButton("Auto Quest",UDim2.new(0,20,0,120),function()
+    pcall(function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StartQuest","BanditQuest1",1)
+    end)
+end)
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 16)
-mainCorner.Parent = MainFrame
+-- Teleport to Island
+CreateButton("Teleport Middle",UDim2.new(0,220,0,120),function()
+    LocalPlayer.Character.HumanoidRootPart.CFrame =
+        CFrame.new(-655,250,-450)
+end)
 
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(80,120,255)
-mainStroke.Thickness = 1.5
-mainStroke.Transparency = 0.3
-mainStroke.Parent = MainFrame
-
--- Title Bar
-local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1,0,0,44)
-TitleBar.BackgroundColor3 = Color3.fromRGB(20,20,45)
-TitleBar.BackgroundTransparency = 0.1
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = MainFrame
-
-local tbCorner = Instance.new("UICorner")
-tbCorner.CornerRadius = UDim.new(0, 16)
-tbCorner.Parent = TitleBar
-
-local tbFix = Instance.new("Frame")
-tbFix.Size = UDim2.new(1,0,0,20)
-tbFix.Position = UDim2.new(0,0,0.5,0)
-tbFix.BackgroundColor3 = Color3.fromRGB(20,20,45)
-tbFix.BorderSizePixel = 0
-tbFix.Parent = TitleBar
-
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(0.7,0,1,0)
-TitleLabel.Position = UDim2.new(0.03,0,0,0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "🔮 NIXES HUB | v2.0"
-TitleLabel.TextColor3 = Color3.fromRGB(180,200,255)
-TitleLabel.TextSize = 18
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.Parent = TitleBar
-
-local PlayerLabel = Instance.new("TextLabel")
-PlayerLabel.Size = UDim2.new(0.3,0,0.5,0)
-PlayerLabel.Position = UDim2.new(0.7,0,0.25,0)
-PlayerLabel.BackgroundTransparency = 1
-PlayerLabel.Text = "👤 "..LocalPlayer.Name
-PlayerLabel.TextColor3 = Color3.fromRGB(100,180,255)
-PlayerLabel.TextSize = 13
-PlayerLabel.Font = Enum.Font.Gotham
-PlayerLabel.TextXAlignment = Enum.TextXAlignment.Right
-PlayerLabel.Parent = TitleBar
-
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0,30,0,30)
-CloseBtn.Position = UDim2.new(0.94,0,0.15,0)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255,60,60)
-CloseBtn.BackgroundTransparency = 0.3
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromWhite(255)
-CloseBtn.TextSize = 16
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Parent = TitleBar
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,8)
-
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0,30,0,30)
-MinBtn.Position = UDim2.new(0.88,0,0.15,0)
-MinBtn.BackgroundColor3 = Color3.fromRGB(255,180,40)
-MinBtn.BackgroundTransparency = 0.3
-MinBtn.Text = "—"
-MinBtn.TextColor3 = Color3.fromWhite(255)
-MinBtn.TextSize = 16
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.Parent = TitleBar
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0,8)
-
--- Sidebar
-local Sidebar = Instance.new("Frame")
-Sidebar.Name = "Sidebar"
-Sidebar.Size = UDim2.new(0,120,1,-44)
-Sidebar.Position = UDim2.new(0,0,0,44)
-Sidebar.BackgroundColor3 = Color3.fromRGB(12,12,28)
-Sidebar.BackgroundTransparency = 0.15
-Sidebar.BorderSizePixel = 0
-Sidebar.Parent = MainFrame
-
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0,12)
-
-local SideList = Instance.new("ScrollingFrame")
-SideList.Size = UDim2.new(1,-4,1,-8)
-SideList.Position = UDim2.new(0,2,0,4)
-SideList.BackgroundTransparency = 1
-SideList.ScrollBarThickness = 2
-SideList.ScrollBarImageColor3 = Color3.fromRGB(80,120,255)
-SideList.CanvasSize = UDim2.new(0,0,0,0)
-SideList.AutomaticCanvasSize = Enum.AutomaticSize.Y
-SideList.Parent = Sidebar
-
-local sideLayout = Instance.new("UIListLayout")
-sideLayout.SortOrder = Enum.SortOrder.LayoutOrder
-sideLayout.Padding = UDim.new(0,3)
-sideLayout.Parent = SideList
-
-local sidePadding = Instance.new("UIPadding")
-sidePadding.PaddingTop = UDim.new(0,4)
-sidePadding.Parent = SideList
-
--- Content Area
-local ContentArea = Instance.new("Frame")
-ContentArea.Name = "ContentArea"
-ContentArea.Size = UDim2.new(1,-130,1,-54)
-ContentArea.Position = UDim2.new(0,125,0,49)
-ContentArea.BackgroundTransparency = 1
-ContentArea.ClipsDescendants = true
-ContentArea.Parent = MainFrame
-
--- Tab storage
-local Tabs 
+print("NixesHub Loaded")
