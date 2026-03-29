@@ -1,16 +1,20 @@
 -- Services
 local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
 
--- Настройки (база для сохранения)
+-- Настройки (База)
 _G.Settings = {
+    AutoFarm = false,
     BringMob = false,
-    AutoEquip = false,
-    WeaponType = "Melee", -- "Melee", "Sword", "Blox Fruit"
-    Distance = 350
+    AutoEgg = false,
+    WeaponType = "Melee", -- Melee, Sword, Blox Fruit
+    FarmDistance = 350,
+    TweenSpeed = 60
 }
 
 -- Удаление старого UI
@@ -23,9 +27,9 @@ ScreenGui.Parent = CoreGui
 
 -- Main Window
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 500, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+MainFrame.Size = UDim2.new(0, 500, 0, 350)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 12, 18)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -33,24 +37,27 @@ MainFrame.Parent = ScreenGui
 
 local UIStroke = Instance.new("UIStroke")
 UIStroke.Thickness = 2
-UIStroke.Color = Color3.fromHex("#52fbf6") -- Твой неоновый
+UIStroke.Color = Color3.fromHex("#52fbf6")
 UIStroke.Parent = MainFrame
 
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
--- Navbar & Pages
-local NavBar = Instance.new("Frame")
-NavBar.Size = UDim2.new(0, 120, 1, 0)
-NavBar.BackgroundTransparency = 0.6
-NavBar.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-NavBar.Parent = MainFrame
-Instance.new("UICorner", NavBar).CornerRadius = UDim.new(0, 12)
+-- Sidebar
+local SideBar = Instance.new("Frame")
+SideBar.Size = UDim2.new(0, 110, 1, -10)
+SideBar.Position = UDim2.new(0, 5, 0, 5)
+SideBar.BackgroundColor3 = Color3.fromRGB(15, 18, 25)
+SideBar.Parent = MainFrame
+Instance.new("UICorner", SideBar).CornerRadius = UDim.new(0, 8)
 
-local Pages = Instance.new("Frame")
-Pages.Position = UDim2.new(0, 130, 0, 10)
-Pages.Size = UDim2.new(1, -140, 1, -20)
-Pages.BackgroundTransparency = 1
-Pages.Parent = MainFrame
+local PageContainer = Instance.new("Frame")
+PageContainer.Size = UDim2.new(1, -125, 1, -10)
+PageContainer.Position = UDim2.new(0, 120, 0, 5)
+PageContainer.BackgroundTransparency = 1
+PageContainer.Parent = MainFrame
+
+-- Хранилище страниц
+local Pages = {}
 
 local function CreatePage(name)
     local p = Instance.new("ScrollingFrame")
@@ -58,105 +65,173 @@ local function CreatePage(name)
     p.Size = UDim2.new(1, 0, 1, 0)
     p.BackgroundTransparency = 1
     p.Visible = false
-    p.ScrollBarThickness = 0
-    p.Parent = Pages
-    Instance.new("UIListLayout", p).Padding = UDim.new(0, 8)
+    p.ScrollBarThickness = 2
+    p.Parent = PageContainer
+    Instance.new("UIListLayout", p).Padding = UDim.new(0, 5)
+    Pages[name] = p
     return p
 end
 
-local FarmPage = CreatePage("Farm")
-FarmPage.Visible = true
+-- Создаем категории
+local MainTab = CreatePage("Main")
+local VisualTab = CreatePage("Visual") -- Для будущих ESP и т.д.
+MainTab.Visible = true
 
---- ФУНКЦИИ (БАЗА) ---
+--- ФУНКЦИИ ЛОГИКИ (БАЗА) ---
 
--- 1. Функция стягивания (BringMob)
-local function BringMobsFunc()
-    for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-            if v:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("HumanoidRootPart") then
-                local dist = (v.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                if dist <= _G.Settings.Distance then
-                    v.HumanoidRootPart.CanCollide = false
-                    -- Телепортируем моба перед игроком
-                    v.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
-                    
-                    -- Чтобы мобы не "разлетались" (базовая фишка открытых скриптов)
-                    if v.HumanoidRootPart:FindFirstChild("BodyVelocity") then
-                        v.HumanoidRootPart.BodyVelocity:Destroy()
-                    end
+-- Функция полета (Tween)
+local function TweenTo(targetCFrame)
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local root = char.HumanoidRootPart
+        local distance = (root.Position - targetCFrame.Position).Magnitude
+        local tweenInfo = TweenInfo.new(distance / _G.Settings.TweenSpeed, Enum.EasingStyle.Linear)
+        
+        local tween = TweenService:Create(root, tweenInfo, {CFrame = targetCFrame})
+        tween:Play()
+        return tween
+    end
+end
+
+-- Поиск ближайшего моба
+local function GetNearestMonster()
+    local target = nil
+    local dist = math.huge
+    local enemies = workspace:FindFirstChild("Enemies")
+    
+    if enemies then
+        for _, v in pairs(enemies:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                local d = (player.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+                if d < dist then
+                    dist = d
+                    target = v
                 end
             end
         end
     end
+    return target
 end
 
--- 2. Функция выбора оружия
-local function EquipWeapon()
-    local tool = player.Backpack:FindFirstChild(_G.Settings.WeaponType) or player.Character:FindFirstChild(_G.Settings.WeaponType)
-    
-    -- Если по ToolTip (стандарт для Blox Fruits)
-    if not tool then
-        for _, v in pairs(player.Backpack:GetChildren()) do
-            if v:IsA("Tool") and (v.ToolTip == _G.Settings.WeaponType or string.find(v.Name, _G.Settings.WeaponType)) then
-                tool = v
-                break
-            end
-        end
-    end
-    
-    if tool and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid:EquipTool(tool)
-    end
+-- Авто-атака (Clicker)
+local function AutoClick()
+    local VirtualUser = game:GetService("VirtualUser")
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton1(Vector2.new(851, 158), game:GetService("Workspace").CurrentCamera.CFrame)
 end
 
---- UI ЭЛЕМЕНТЫ ---
+--- UI КОМПОНЕНТЫ ---
 
-local function AddButton(parent, text, callback)
+local function NewButton(parent, text, callback)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Size = UDim2.new(1, -5, 0, 35)
     btn.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+    btn.Font = Enum.Font.Gotham
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.Gotham
     btn.Parent = parent
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     btn.MouseButton1Click:Connect(callback)
     return btn
 end
 
--- Кнопка выбора оружия
-local WeaponSelector = AddButton(FarmPage, "Weapon: " .. _G.Settings.WeaponType, function()
-    local types = {"Melee", "Sword", "Blox Fruit"}
-    local index = table.find(types, _G.Settings.WeaponType) or 1
-    _G.Settings.WeaponType = types[index % 3 + 1]
-    FarmPage:FindFirstChild("WeaponSelector").Text = "Weapon: " .. _G.Settings.WeaponType
-end)
-WeaponSelector.Name = "WeaponSelector"
+-- Наполнение страницы Main
+NewButton(MainTab, "Auto Farm: OFF", function()
+    _G.Settings.AutoFarm = not _G.Settings.AutoFarm
+    MainTab:FindFirstChild("AutoFarmBtn").Text = "Auto Farm: " .. (_G.Settings.AutoFarm and "ON" or "OFF")
+end).Name = "AutoFarmBtn"
 
--- Переключатель BringMob
-local BringToggle = AddButton(FarmPage, "Bring Mobs: OFF", function()
+NewButton(MainTab, "Bring Mobs: OFF", function()
     _G.Settings.BringMob = not _G.Settings.BringMob
-    FarmPage:FindFirstChild("BringToggle").Text = "Bring Mobs: " .. (_G.Settings.BringMob and "ON" or "OFF")
-    FarmPage:FindFirstChild("BringToggle").TextColor3 = _G.Settings.BringMob and Color3.fromHex("#52fbf6") or Color3.fromRGB(255, 255, 255)
+    MainTab:FindFirstChild("BringBtn").Text = "Bring Mobs: " .. (_G.Settings.BringMob and "ON" or "OFF")
+end).Name = "BringBtn"
+
+NewButton(MainTab, "Auto Loot Eggs: OFF", function()
+    _G.Settings.AutoEgg = not _G.Settings.AutoEgg
+    MainTab:FindFirstChild("EggBtn").Text = "Auto Loot Eggs: " .. (_G.Settings.AutoEgg and "ON" or "OFF")
+end).Name = "EggBtn"
+
+NewButton(MainTab, "Weapon: " .. _G.Settings.WeaponType, function()
+    local types = {"Melee", "Sword", "Blox Fruit"}
+    local i = table.find(types, _G.Settings.WeaponType) or 1
+    _G.Settings.WeaponType = types[i % 3 + 1]
+    MainTab:FindFirstChild("WepBtn").Text = "Weapon: " .. _G.Settings.WeaponType
+end).Name = "WepBtn"
+
+-- Навигация (Кнопки слева)
+local function AddTab(name)
+    local t = Instance.new("TextButton")
+    t.Size = UDim2.new(1, -10, 0, 30)
+    t.BackgroundColor3 = Color3.fromRGB(40, 45, 55)
+    t.Text = name
+    t.TextColor3 = Color3.fromRGB(255, 255, 255)
+    t.Parent = SideBar
+    Instance.new("UICorner", t).CornerRadius = UDim.new(0, 4)
+    t.MouseButton1Click:Connect(function()
+        for _, p in pairs(Pages) do p.Visible = false end
+        Pages[name].Visible = true
+    end)
+end
+
+AddTab("Main")
+AddTab("Visual")
+
+--- ЦИКЛЫ ЛОГИКИ ---
+
+-- Цикл Автофарма (Полет + Удары)
+task.spawn(function()
+    while task.wait() do
+        if _G.Settings.AutoFarm then
+            local mob = GetNearestMonster()
+            if mob and mob:FindFirstChild("HumanoidRootPart") then
+                -- Летим под моба (позиция фарма)
+                player.Character.HumanoidRootPart.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, -10, 0)
+                AutoClick() -- Сами бьем
+            end
+        end
+    end
 end)
-BringToggle.Name = "BringToggle"
 
---- LOOPS ---
-
+-- Цикл BringMob
 task.spawn(function()
     while task.wait() do
         if _G.Settings.BringMob then
-            pcall(BringMobsFunc)
+            pcall(function()
+                for _, v in pairs(workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("HumanoidRootPart") and (v.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude < _G.Settings.FarmDistance then
+                        v.HumanoidRootPart.CanCollide = false
+                        v.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                    end
+                end
+            end)
         end
     end
 end)
 
+-- Цикл сбора яиц (через проверку Workspace)
 task.spawn(function()
     while task.wait(0.5) do
-        if _G.Settings.BringMob then -- Достаем оружие только при включенном стягивании
-            pcall(EquipWeapon)
+        if _G.Settings.AutoEgg then
+            for _, v in pairs(workspace:GetChildren()) do
+                if string.find(v.Name, "Egg") and v:IsA("BasePart") then
+                    TweenTo(v.CFrame)
+                end
+            end
         end
     end
 end)
 
-print("Nixes Hub Base Loaded!")
+-- Авто-экипировка
+task.spawn(function()
+    while task.wait(1) do
+        if _G.Settings.AutoFarm or _G.Settings.BringMob then
+            local tool = player.Backpack:FindFirstChild(_G.Settings.WeaponType)
+            if not tool then
+                for _, t in pairs(player.Backpack:GetChildren()) do
+                    if t.ToolTip == _G.Settings.WeaponType then tool = t break end
+                end
+            end
+            if tool then player.Character.Humanoid:EquipTool(tool) end
+        end
+    end
+end)
