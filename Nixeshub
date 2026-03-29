@@ -12,174 +12,138 @@ local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "GamingSpirit_BloxFruits"
 ScreenGui.Parent = CoreGui
 
--- Main Frame (Modern Glass UI)
+-- Main Frame (Deep Black)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 260, 0, 260)
-MainFrame.Position = UDim2.new(0.5, -130, 0.5, -130)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.BackgroundTransparency = 0.25
-MainFrame.BorderSizePixel = 0
+MainFrame.Size = UDim2.new(0, 240, 0, 240)
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -120)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Pure Black
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(60, 60, 60)
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 14)
+UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = MainFrame
 
-local UIStroke = Instance.new("UIStroke")
-UIStroke.Thickness = 2
-UIStroke.Color = Color3.fromRGB(80, 80, 80)
-UIStroke.Transparency = 0.3
-UIStroke.Parent = MainFrame
-
--- Layout
+-- UI List Layout (Keeps everything perfectly stacked)
 local Layout = Instance.new("UIListLayout")
 Layout.Parent = MainFrame
 Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Layout.Padding = UDim.new(0, 12)
 Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
+-- Padding at the top
 local Padding = Instance.new("UIPadding")
-Padding.PaddingTop = UDim.new(0, 18)
+Padding.PaddingTop = UDim.new(0, 15)
 Padding.Parent = MainFrame
 
--- Title
+--- 1. Game Name Label
 local GameName = Instance.new("TextLabel")
 GameName.LayoutOrder = 1
-GameName.Size = UDim2.new(0, 220, 0, 32)
+GameName.Size = UDim2.new(0, 200, 0, 30)
 GameName.BackgroundTransparency = 1
 GameName.Text = "BLOX FRUITS"
 GameName.TextColor3 = Color3.fromRGB(255, 255, 255)
-GameName.TextSize = 24
+GameName.TextSize = 22
 GameName.Font = Enum.Font.GothamBold
 GameName.Parent = MainFrame
 
--- Function to create modern buttons
-local function CreateButton(text)
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(0, 220, 0, 48)
-    Btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-    Btn.Text = text
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.Font = Enum.Font.GothamBold
-    Btn.TextSize = 16
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = Btn
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Thickness = 1.5
-    stroke.Color = Color3.fromRGB(90, 90, 90)
-    stroke.Parent = Btn
-
-    -- Hover animation
-    Btn.MouseEnter:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
-    end)
-    Btn.MouseLeave:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
-    end)
-
-    return Btn
-end
-
--- Buttons
-local ToggleBtn = CreateButton("AUTO EGG HUNT")
+--- 2. Auto Egg Hunt Button
+local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.LayoutOrder = 2
+ToggleBtn.Size = UDim2.new(0, 200, 0, 45)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+ToggleBtn.Text = "AUTO EGG HUNT"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextSize = 14
 ToggleBtn.Parent = MainFrame
 
-local HopBtn = CreateButton("SERVER HOP")
+local BtnCorner1 = Instance.new("UICorner")
+BtnCorner1.CornerRadius = UDim.new(0, 6)
+BtnCorner1.Parent = ToggleBtn
+
+--- 3. Server Hop Button
+local HopBtn = Instance.new("TextButton")
 HopBtn.LayoutOrder = 3
+HopBtn.Size = UDim2.new(0, 200, 0, 45)
+HopBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+HopBtn.Text = "SERVER HOP"
+HopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+HopBtn.Font = Enum.Font.GothamBold
+HopBtn.TextSize = 14
 HopBtn.Parent = MainFrame
 
--- Credit
+local BtnCorner2 = Instance.new("UICorner")
+BtnCorner2.CornerRadius = UDim.new(0, 6)
+BtnCorner2.Parent = HopBtn
+
+--- 4. YouTube Credit Label
 local YTLabel = Instance.new("TextLabel")
 YTLabel.LayoutOrder = 4
 YTLabel.Size = UDim2.new(0, 200, 0, 30)
 YTLabel.BackgroundTransparency = 1
 YTLabel.Text = "Gaming Spirit"
-YTLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+YTLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YTLabel.TextSize = 16
 YTLabel.Font = Enum.Font.GothamBold
 YTLabel.Parent = MainFrame
 
--- SCRIPT LOGIC
+--- SCRIPT LOGIC ---
+
 local RUNNING = false
 local TARGET_NAME = "_PrimaryPart"
-
--- SPEED INCREASED
 local SPEED = 400
-local Y_OFFSET = 5
+local Y_OFFSET = 5 
 
--- Auto Egg Hunt
+-- Auto Egg Hunt Logic
 ToggleBtn.MouseButton1Click:Connect(function()
     RUNNING = not RUNNING
-
     if RUNNING then
-        TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 160, 0)}):Play()
-
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0) -- Green when active
         task.spawn(function()
             while RUNNING do
                 local char = player.Character
                 local root = char and char:FindFirstChild("HumanoidRootPart")
                 local target = nil
-
                 for _, obj in ipairs(workspace:GetDescendants()) do
                     if obj.Name == TARGET_NAME and obj:IsA("BasePart") then
-                        target = obj
-                        break
+                        target = obj; break
                     end
                 end
-
                 if target and root then
                     local targetPos = target.CFrame * CFrame.new(0, Y_OFFSET, 0)
                     local dist = (root.Position - targetPos.Position).Magnitude
-
-                    local tween = TweenService:Create(
-                        root,
-                        TweenInfo.new(dist / SPEED, Enum.EasingStyle.Linear),
-                        {CFrame = targetPos}
-                    )
-
+                    local tween = TweenService:Create(root, TweenInfo.new(dist/SPEED, Enum.EasingStyle.Linear), {CFrame = targetPos})
                     tween:Play()
-
                     local arrived = false
-                    local conn = tween.Completed:Connect(function()
-                        arrived = true
-                    end)
-
-                    while not arrived and RUNNING do
-                        task.wait(0.05)
-                    end
-
+                    local conn = tween.Completed:Connect(function() arrived = true end)
+                    while not arrived and RUNNING do task.wait(0.1) end
+                    if not RUNNING then tween:Cancel() end
                     conn:Disconnect()
                 else
                     task.wait(1)
                 end
-
-                task.wait(0.05)
+                task.wait(0.1)
             end
         end)
-
     else
-        TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     end
 end)
 
--- Server Hop
+-- Server Hop Logic
 HopBtn.MouseButton1Click:Connect(function()
     local servers = {}
     local raw = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
     local data = HttpService:JSONDecode(raw).data
-
     for _, v in ipairs(data) do
         if v.playing < v.maxPlayers and v.id ~= game.JobId then
             table.insert(servers, v.id)
         end
     end
-
     if #servers > 0 then
         TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
     end
