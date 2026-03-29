@@ -3,148 +3,163 @@ local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
+local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
--- UI Construction
+-- Удаление старого UI если есть
+if CoreGui:FindFirstChild("NixesHub") then CoreGui.NixesHub:Destroy() end
+
+-- UI Root
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GamingSpirit_BloxFruits"
+ScreenGui.Name = "NixesHub"
 ScreenGui.Parent = CoreGui
 
--- Main Frame (Deep Black)
+-- Main Window (Glass Effect)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 240, 0, 240)
-MainFrame.Position = UDim2.new(0.5, -120, 0.5, -120)
-MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Pure Black
-MainFrame.BorderSizePixel = 2
-MainFrame.BorderColor3 = Color3.fromRGB(60, 60, 60)
+MainFrame.Size = UDim2.new(0, 500, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+MainFrame.BackgroundTransparency = 0.2
+MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = MainFrame
 
--- UI List Layout (Keeps everything perfectly stacked)
-local Layout = Instance.new("UIListLayout")
-Layout.Parent = MainFrame
-Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-Layout.Padding = UDim.new(0, 12)
-Layout.SortOrder = Enum.SortOrder.LayoutOrder
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(0, 170, 255)
+UIStroke.Transparency = 0.5
+UIStroke.Parent = MainFrame
 
--- Padding at the top
-local Padding = Instance.new("UIPadding")
-Padding.PaddingTop = UDim.new(0, 15)
-Padding.Parent = MainFrame
+-- Left Navbar
+local NavBar = Instance.new("Frame")
+NavBar.Size = UDim2.new(0, 120, 1, 0)
+NavBar.BackgroundColor3 = Color3.fromRGB(10, 15, 25)
+NavBar.BackgroundTransparency = 0.5
+NavBar.Parent = MainFrame
 
---- 1. Game Name Label
-local GameName = Instance.new("TextLabel")
-GameName.LayoutOrder = 1
-GameName.Size = UDim2.new(0, 200, 0, 30)
-GameName.BackgroundTransparency = 1
-GameName.Text = "BLOX FRUITS"
-GameName.TextColor3 = Color3.fromRGB(255, 255, 255)
-GameName.TextSize = 22
-GameName.Font = Enum.Font.GothamBold
-GameName.Parent = MainFrame
+local NavCorner = Instance.new("UICorner")
+NavCorner.CornerRadius = UDim.new(0, 12)
+NavCorner.Parent = NavBar
 
---- 2. Auto Egg Hunt Button
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.LayoutOrder = 2
-ToggleBtn.Size = UDim2.new(0, 200, 0, 45)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-ToggleBtn.Text = "AUTO EGG HUNT"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 14
-ToggleBtn.Parent = MainFrame
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "NIXES HUB"
+Title.TextColor3 = Color3.fromRGB(0, 200, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.BackgroundTransparency = 1
+Title.Parent = NavBar
 
-local BtnCorner1 = Instance.new("UICorner")
-BtnCorner1.CornerRadius = UDim.new(0, 6)
-BtnCorner1.Parent = ToggleBtn
+-- Контейнер для страниц
+local Pages = Instance.new("Frame")
+Pages.Position = UDim2.new(0, 130, 0, 10)
+Pages.Size = UDim2.new(1, -140, 1, -20)
+Pages.BackgroundTransparency = 1
+Pages.Parent = MainFrame
 
---- 3. Server Hop Button
-local HopBtn = Instance.new("TextButton")
-HopBtn.LayoutOrder = 3
-HopBtn.Size = UDim2.new(0, 200, 0, 45)
-HopBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-HopBtn.Text = "SERVER HOP"
-HopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-HopBtn.Font = Enum.Font.GothamBold
-HopBtn.TextSize = 14
-HopBtn.Parent = MainFrame
+local function CreatePage(name)
+    local p = Instance.new("ScrollingFrame")
+    p.Name = name
+    p.Size = UDim2.new(1, 0, 1, 0)
+    p.BackgroundTransparency = 1
+    p.Visible = false
+    p.ScrollBarThickness = 0
+    p.Parent = Pages
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 8)
+    layout.Parent = p
+    return p
+end
 
-local BtnCorner2 = Instance.new("UICorner")
-BtnCorner2.CornerRadius = UDim.new(0, 6)
-BtnCorner2.Parent = HopBtn
+local FarmPage = CreatePage("Farm")
+local EventPage = CreatePage("Event")
+FarmPage.Visible = true
 
---- 4. YouTube Credit Label
-local YTLabel = Instance.new("TextLabel")
-YTLabel.LayoutOrder = 4
-YTLabel.Size = UDim2.new(0, 200, 0, 30)
-YTLabel.BackgroundTransparency = 1
-YTLabel.Text = "Gaming Spirit"
-YTLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-YTLabel.TextSize = 16
-YTLabel.Font = Enum.Font.GothamBold
-YTLabel.Parent = MainFrame
+--- ЭЛЕМЕНТЫ УПРАВЛЕНИЯ (Пример создания кнопки) ---
+local function CreateToggle(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 40, 50)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.Parent = parent
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.TextColor3 = state and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(200, 200, 200)
+        callback(state)
+    end)
+    
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = btn
+end
 
---- SCRIPT LOGIC ---
+-- Вкладка FARM
+local WeaponType = "Melee"
+CreateToggle(FarmPage, "Weapon: Melee (Click to Cycle)", function(s)
+    local types = {"Melee", "Sword", "Fruit"}
+    local current = table.find(types, WeaponType)
+    WeaponType = types[current % 3 + 1]
+    FarmPage:FindFirstChild("Weapon: Melee (Click to Cycle)").Text = "Weapon: " .. WeaponType
+end)
 
-local RUNNING = false
-local TARGET_NAME = "_PrimaryPart"
-local SPEED = 400
-local Y_OFFSET = 5 
+local AutoFarmEnabled = false
+CreateToggle(FarmPage, "AUTO FARM LVL", function(val)
+    AutoFarmEnabled = val
+    if val then print("Запуск логики поиска квестера...") end
+end)
 
--- Auto Egg Hunt Logic
-ToggleBtn.MouseButton1Click:Connect(function()
-    RUNNING = not RUNNING
-    if RUNNING then
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0) -- Green when active
-        task.spawn(function()
-            while RUNNING do
-                local char = player.Character
-                local root = char and char:FindFirstChild("HumanoidRootPart")
-                local target = nil
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj.Name == TARGET_NAME and obj:IsA("BasePart") then
-                        target = obj; break
+-- Вкладка EVENT
+CreateToggle(EventPage, "AUTO EGG HUNT", function(val)
+    -- Сюда переносится твоя старая логика сбора яиц
+end)
+
+--- LOGIC: Автоматическое взятие оружия ---
+task.spawn(function()
+    while task.wait(1) do
+        if AutoFarmEnabled then
+            local char = player.Character
+            if char and not char:FindFirstChildOfClass("Tool") then
+                for _, tool in ipairs(player.Backpack:GetChildren()) do
+                    if tool:IsA("Tool") and (tool.ToolTip == WeaponType or string.find(tool.Name, WeaponType)) then
+                        char.Humanoid:EquipTool(tool)
                     end
                 end
-                if target and root then
-                    local targetPos = target.CFrame * CFrame.new(0, Y_OFFSET, 0)
-                    local dist = (root.Position - targetPos.Position).Magnitude
-                    local tween = TweenService:Create(root, TweenInfo.new(dist/SPEED, Enum.EasingStyle.Linear), {CFrame = targetPos})
-                    tween:Play()
-                    local arrived = false
-                    local conn = tween.Completed:Connect(function() arrived = true end)
-                    while not arrived and RUNNING do task.wait(0.1) end
-                    if not RUNNING then tween:Cancel() end
-                    conn:Disconnect()
-                else
-                    task.wait(1)
-                end
-                task.wait(0.1)
             end
-        end)
-    else
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        end
     end
 end)
 
--- Server Hop Logic
-HopBtn.MouseButton1Click:Connect(function()
-    local servers = {}
-    local raw = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
-    local data = HttpService:JSONDecode(raw).data
-    for _, v in ipairs(data) do
-        if v.playing < v.maxPlayers and v.id ~= game.JobId then
-            table.insert(servers, v.id)
-        end
+-- Переключение вкладок (Упрощенно)
+local function ShowPage(name)
+    for _, p in pairs(Pages:GetChildren()) do
+        p.Visible = (p.Name == name)
     end
-    if #servers > 0 then
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
-    end
-end)
+end
+
+-- Кнопки навигации
+local FarmTab = Instance.new("TextButton")
+FarmTab.Size = UDim2.new(1, -10, 0, 30)
+FarmTab.Position = UDim2.new(0, 5, 0, 50)
+FarmTab.Text = "Farm"
+FarmTab.Parent = NavBar
+FarmTab.MouseButton1Click:Connect(function() ShowPage("Farm") end)
+
+local EventTab = Instance.new("TextButton")
+EventTab.Size = UDim2.new(1, -10, 0, 30)
+EventTab.Position = UDim2.new(0, 5, 0, 85)
+EventTab.Text = "Event"
+EventTab.Parent = NavBar
+EventTab.MouseButton1Click:Connect(function() ShowPage("Event") end)
