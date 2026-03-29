@@ -1,249 +1,186 @@
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+-- Services
+local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
--- Настройки интерфейса
-local ColorTheme = {
-    Background = Color3.fromRGB(25, 25, 25),
-    Accent = Color3.fromRGB(0, 200, 255), -- Неоновый голубой
-    Text = Color3.fromRGB(255, 255, 255),
-    GrayText = Color3.fromRGB(180, 180, 180),
-    ButtonBg = Color3.fromRGB(40, 40, 40),
-    Glass = Color3.fromRGB(30, 30, 30)
-}
+local player = Players.LocalPlayer
 
--- Создание базового контейнера
+-- UI Construction
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BloxHub"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+ScreenGui.Name = "GamingSpirit_BloxFruits"
+ScreenGui.Parent = CoreGui
 
+-- Main Frame (Modern Glass UI)
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = ColorTheme.Background
+MainFrame.Size = UDim2.new(0, 260, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -130)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundTransparency = 0.25
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
-MainFrame.Size = UDim2.new(0, 500, 0, 350)
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.ClipsDescendants = true
-MainFrame.ZIndex = 10
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
--- Рамка и границы
-local Border = Instance.new("Frame")
-Border.Parent = MainFrame
-Border.BackgroundColor3 = ColorTheme.Accent
-Border.BorderSizePixel = 0
-Border.Position = UDim2.new(0, -1, 0, -1)
-Border.Size = UDim2.new(1, 2, 1, 2)
-Border.ZIndex = 10
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 14)
+UICorner.Parent = MainFrame
 
--- Заголовок
-local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TopBar"
-TitleBar.Parent = MainFrame
-TitleBar.BackgroundColor3 = ColorTheme.ButtonBg
-TitleBar.BorderSizePixel = 0
-TitleBar.Position = UDim2.new(0, 0, 0, 0)
-TitleBar.Size = UDim2.new(1, 0, 0, 35)
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Thickness = 2
+UIStroke.Color = Color3.fromRGB(80, 80, 80)
+UIStroke.Transparency = 0.3
+UIStroke.Parent = MainFrame
 
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Parent = TitleBar
-TitleLabel.Text = "BLOX HUB | v2.0"
-TitleLabel.Font = Enum.Font.GothamBlack
-TitleLabel.TextColor3 = ColorTheme.Text
-TitleLabel.TextSize = 16
-TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+-- Layout
+local Layout = Instance.new("UIListLayout")
+Layout.Parent = MainFrame
+Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Layout.Padding = UDim.new(0, 12)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Кнопка закрытия
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = TitleBar
-CloseBtn.Text = "X"
-CloseBtn.BackgroundColor3 = ColorTheme.Background
-CloseBtn.BorderSizePixel = 0
-CloseBtn.Size = UDim2.new(0, 35, 1, 0)
-CloseBtn.Position = UDim2.new(1, -35, 0, 0)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 18
-CloseBtn.TextColor3 = ColorTheme.GrayText
+local Padding = Instance.new("UIPadding")
+Padding.PaddingTop = UDim.new(0, 18)
+Padding.Parent = MainFrame
 
-CloseBtn.MouseButton1Click:Connect(function()
-    local TweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad)
-    local Property = FramePosition({Position = UDim2.new(0.5, -250, 0.5, -150)})
-    TweenService:Create(MainFrame, TweenInfo, Property):Play()
-    MainFrame.Visible = false
-end)
+-- Title
+local GameName = Instance.new("TextLabel")
+GameName.LayoutOrder = 1
+GameName.Size = UDim2.new(0, 220, 0, 32)
+GameName.BackgroundTransparency = 1
+GameName.Text = "BLOX FRUITS"
+GameName.TextColor3 = Color3.fromRGB(255, 255, 255)
+GameName.TextSize = 24
+GameName.Font = Enum.Font.GothamBold
+GameName.Parent = MainFrame
 
--- === СХЕМА ПЕРЕМЕЩЕНИЯ ОКНА ===
-local dragging, dragInput, mousePos, framePos = false, false, nil, nil
-TitleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        mousePos = input.Position
-        framePos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+-- Function to create modern buttons
+local function CreateButton(text)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(0, 220, 0, 48)
+    Btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    Btn.Text = text
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.Font = Enum.Font.GothamBold
+    Btn.TextSize = 16
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = Btn
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1.5
+    stroke.Color = Color3.fromRGB(90, 90, 90)
+    stroke.Parent = Btn
+
+    -- Hover animation
+    Btn.MouseEnter:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+    end)
+    Btn.MouseLeave:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
+    end)
+
+    return Btn
+end
+
+-- Buttons
+local ToggleBtn = CreateButton("AUTO EGG HUNT")
+ToggleBtn.LayoutOrder = 2
+ToggleBtn.Parent = MainFrame
+
+local HopBtn = CreateButton("SERVER HOP")
+HopBtn.LayoutOrder = 3
+HopBtn.Parent = MainFrame
+
+-- Credit
+local YTLabel = Instance.new("TextLabel")
+YTLabel.LayoutOrder = 4
+YTLabel.Size = UDim2.new(0, 200, 0, 30)
+YTLabel.BackgroundTransparency = 1
+YTLabel.Text = "Gaming Spirit"
+YTLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+YTLabel.TextSize = 16
+YTLabel.Font = Enum.Font.GothamBold
+YTLabel.Parent = MainFrame
+
+-- SCRIPT LOGIC
+local RUNNING = false
+local TARGET_NAME = "_PrimaryPart"
+
+-- SPEED INCREASED
+local SPEED = 120
+local Y_OFFSET = 5
+
+-- Auto Egg Hunt
+ToggleBtn.MouseButton1Click:Connect(function()
+    RUNNING = not RUNNING
+
+    if RUNNING then
+        TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(0, 160, 0)}):Play()
+
+        task.spawn(function()
+            while RUNNING do
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local target = nil
+
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj.Name == TARGET_NAME and obj:IsA("BasePart") then
+                        target = obj
+                        break
+                    end
+                end
+
+                if target and root then
+                    local targetPos = target.CFrame * CFrame.new(0, Y_OFFSET, 0)
+                    local dist = (root.Position - targetPos.Position).Magnitude
+
+                    local tween = TweenService:Create(
+                        root,
+                        TweenInfo.new(dist / SPEED, Enum.EasingStyle.Linear),
+                        {CFrame = targetPos}
+                    )
+
+                    tween:Play()
+
+                    local arrived = false
+                    local conn = tween.Completed:Connect(function()
+                        arrived = true
+                    end)
+
+                    while not arrived and RUNNING do
+                        task.wait(0.05)
+                    end
+
+                    conn:Disconnect()
+                else
+                    task.wait(1)
+                end
+
+                task.wait(0.05)
             end
         end)
+
+    else
+        TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
     end
 end)
 
-TitleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
+-- Server Hop
+HopBtn.MouseButton1Click:Connect(function()
+    local servers = {}
+    local raw = game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+    local data = HttpService:JSONDecode(raw).data
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - mousePos
-        MainFrame.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
-    end
-end)
-
--- === ВКЛАДКИ (TABS) ===
-local TabsContainer = Instance.new("Frame")
-TabsContainer.Parent = MainFrame
-TabsContainer.BackgroundColor3 = ColorTheme.ButtonBg
-TabsContainer.BorderSizePixel = 0
-TabsContainer.Position = UDim2.new(0, 0, 0, 35)
-TabsContainer.Size = UDim2.new(1, 0, 0, 40)
-
-local TabButtons = {}
-local TabFrames = {}
-
--- Функция создания кнопок вкладок
-function CreateTabButton(name, index, posOffset)
-    local Button = Instance.new("TextButton")
-    Button.Parent = TabsContainer
-    Button.Text = name
-    Button.Font = Enum.Font.GothamMedium
-    Button.TextSize = 14
-    Button.TextColor3 = ColorTheme.GrayText
-    Button.TextScaled = false
-    
-    Button.BackgroundColor3 = ColorTheme.ButtonBg
-    Button.BorderSizePixel = 0
-    Button.Position = UDim2.new(0, posOffset, 0, 0)
-    Button.Size = UDim2.new(0, 100, 1, 0)
-    
-    -- Подсветка активной вкладки
-    local SelectionIndicator = Instance.new("Frame")
-    SelectionIndicator.Name = "SelectionIndicator"
-    SelectionIndicator.Parent = Button
-    SelectionIndicator.BackgroundColor3 = ColorTheme.Accent
-    SelectionIndicator.BorderSizePixel = 0
-    SelectionIndicator.Size = UDim2.new(1, 0, 0, 2)
-    SelectionIndicator.Position = UDim2.new(0, 0, 1, 0)
-    SelectionIndicator.Visible = index == 1
-    
-    -- Контент вкладки
-    local ContentFrame = Instance.new("ScrollingFrame")
-    ContentFrame.Name = "Content"
-    ContentFrame.Parent = MainFrame
-    ContentFrame.BackgroundColor3 = ColorTheme.Glass
-    ContentFrame.BorderSizePixel = 0
-    ContentFrame.Position = UDim2.new(0, 0, 0, 75)
-    ContentFrame.Size = UDim2.new(1, 0, 1, -75)
-    ContentFrame.ScrollBarThickness = 4
-    ContentFrame.ScrollBarImageColor3 = ColorTheme.Accent
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 200)
-    ContentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    ContentFrame.Visible = index == 1
-    
-    -- Методы переключения
-    Button.MouseButton1Click:Connect(function()
-        for i, btn in pairs(TabButtons) do
-            TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = ColorTheme.GrayText}):Play()
-            btn.SelectionIndicator.Visible = false
-            TabFrames[i].Visible = false
+    for _, v in ipairs(data) do
+        if v.playing < v.maxPlayers and v.id ~= game.JobId then
+            table.insert(servers, v.id)
         end
-        
-        TweenService:Create(Button, TweenInfo.new(0.2), {TextColor3 = ColorTheme.Text}):Play()
-        SelectionIndicator.Visible = true
-        ContentFrame.Visible = true
-    end)
-    
-    table.insert(TabButtons, Button)
-    table.insert(TabFrames, ContentFrame)
-    return ContentFrame
-end
+    end
 
--- === ГЕНЕРАЦИЯ КНОПОК В ШАБЛОНЕ ===
-function CreateActionButton(parent, title, subtext)
-    local BtnContainer = Instance.new("Frame")
-    BtnContainer.Name = title
-    BtnContainer.BackgroundColor3 = ColorTheme.ButtonBg
-    BtnContainer.BorderSizePixel = 0
-    BtnContainer.Position = UDim2.new(0, 10, 0, #parent:GetChildren() * 45)
-    BtnContainer.Size = UDim2.new(1, -20, 0, 45)
-    BtnContainer.Parent = parent
-    
-    local BtnLabel = Instance.new("TextLabel")
-    BtnLabel.Parent = BtnContainer
-    BtnLabel.BackgroundTransparency = 1
-    BtnLabel.Text = title
-    BtnLabel.Font = Enum.Font.GothamBold
-    BtnLabel.TextSize = 14
-    BtnLabel.TextColor3 = ColorTheme.Text
-    BtnLabel.Size = UDim2.new(0.65, 0, 1, 0)
-    BtnLabel.Position = UDim2.new(0, 10, 0, 0)
-    BtnLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local SubLabel = Instance.new("TextLabel")
-    SubLabel.Parent = BtnContainer
-    SubLabel.BackgroundTransparency = 1
-    SubLabel.Text = subtext
-    SubLabel.Font = Enum.Font.GothamLight
-    SubLabel.TextSize = 12
-    SubLabel.TextColor3 = ColorTheme.GrayText
-    SubLabel.Size = UDim2.new(0.35, 0, 1, 0)
-    SubLabel.Position = UDim2.new(0.65, 0, 0, 0)
-    SubLabel.TextXAlignment = Enum.TextXAlignment.Right
-    
-    -- Имитация кнопки (безопасная)
-    BtnContainer.MouseButton1Click:Connect(function()
-        warn("[UI CLICK] Action: " .. title)
-        -- Сюда вставляется логика (для обучения в своей игре)
-    end)
-end
-
--- === ВАБАВЫ (FARM) ===
-local FarmTab = CreateTabButton("🌾 Farm", 1, 0)
-CreateActionButton(FarmTab, "Auto Level", "[Z, X, C]")
-CreateActionButton(FarmTab, "Auto Fish", "[V]")
-CreateActionButton(FarmTab, "Auto Raid", "[R]")
-CreateActionButton(FarmTab, "Sea Events", "[E]")
-CreateActionButton(FarmTab, "Auto Quest", "[Q]")
-CreateActionButton(FarmTab, "Auto Boss", "[F]")
-
--- === TELEPORT ===
-local TeleportTab = CreateTabButton("⚡ Teleport", 2, 100)
-CreateActionButton(TeleportTab, "Spawn Island", "[Home]")
-CreateActionButton(TeleportTab, "Start Area", "[1]")
-CreateActionButton(TeleportTab, "Jungle", "[2]")
-CreateActionButton(TeleportTab, "Magma Village", "[3]")
-CreateActionButton(TeleportTab, "Skylands", "[4]")
-CreateActionButton(TeleportTab, "Fruit Dealer", "[Fruit]")
-
--- === STATS ===
-local StatsTab = CreateTabButton("📊 Stats", 3, 200)
-CreateActionButton(StatsTab, "Show Inventory", "[INVENTORY]")
-CreateActionButton(StatsTab, "Current Fruit", "[FRUIT INFO]")
-CreateActionButton(StatsTab, "Server Info", "[SERVER ID]")
-CreateActionButton(StatsTab, "Level Display", "[LVL SHOW]")
-
--- === MISC ===
-local MiscTab = CreateTabButton("⚙️ Misc", 4, 300)
-CreateActionButton(MiscTab, "No Flash", "[Flash Fix]")
-CreateActionButton(MiscTab, "Fast Click", "[ClickSpammer]")
-CreateActionButton(MiscTab, "Auto Grab Item", "[Grabber]")
-CreateActionButton(MiscTab, "FPS Unlocker", "[60+]")
-CreateActionButton(MiscTab, "Auto Login", "[Save]")
-CreateActionButton(MiscTab, "Script Hub", "[More UI]")
-
-print("✅ BloxFruits Style Interface Loaded Successfully!")
-print("ℹ️ Это учебный шаблон UI. Функции не активированы.")
+    if #servers > 0 then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+    end
+end)
