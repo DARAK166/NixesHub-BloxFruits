@@ -1,16 +1,15 @@
 -- Services
 local CoreGui = game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
--- Настройки (Синхронизированы с UI)
-local Settings = {
+-- Настройки (база для сохранения)
+_G.Settings = {
     BringMob = false,
-    WeaponType = "Melee", -- Melee, Sword, Blox Fruit
+    AutoEquip = false,
+    WeaponType = "Melee", -- "Melee", "Sword", "Blox Fruit"
     Distance = 350
 }
 
@@ -27,44 +26,26 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 500, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
-MainFrame.BackgroundTransparency = 0.15
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
-
 local UIStroke = Instance.new("UIStroke")
 UIStroke.Thickness = 2
-UIStroke.Color = Color3.fromRGB(82, 251, 246) -- Твой фирменный неоновый
-UIStroke.Transparency = 0.4
+UIStroke.Color = Color3.fromHex("#52fbf6") -- Твой неоновый
 UIStroke.Parent = MainFrame
 
--- Left Navbar
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+
+-- Navbar & Pages
 local NavBar = Instance.new("Frame")
 NavBar.Size = UDim2.new(0, 120, 1, 0)
-NavBar.BackgroundColor3 = Color3.fromRGB(10, 15, 25)
-NavBar.BackgroundTransparency = 0.5
+NavBar.BackgroundTransparency = 0.6
+NavBar.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 NavBar.Parent = MainFrame
+Instance.new("UICorner", NavBar).CornerRadius = UDim.new(0, 12)
 
-local NavCorner = Instance.new("UICorner")
-NavCorner.CornerRadius = UDim.new(0, 12)
-NavCorner.Parent = NavBar
-
--- Title
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "NIXES HUB"
-Title.TextColor3 = Color3.fromRGB(82, 251, 246)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
-Title.BackgroundTransparency = 1
-Title.Parent = NavBar
-
--- Container for Pages
 local Pages = Instance.new("Frame")
 Pages.Position = UDim2.new(0, 130, 0, 10)
 Pages.Size = UDim2.new(1, -140, 1, -20)
@@ -79,144 +60,103 @@ local function CreatePage(name)
     p.Visible = false
     p.ScrollBarThickness = 0
     p.Parent = Pages
-    
-    local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 8)
-    layout.Parent = p
+    Instance.new("UIListLayout", p).Padding = UDim.new(0, 8)
     return p
 end
 
 local FarmPage = CreatePage("Farm")
-local EventPage = CreatePage("Event")
 FarmPage.Visible = true
 
---- UI ELEMENTS ---
+--- ФУНКЦИИ (БАЗА) ---
 
-local function CreateToggle(parent, text, default, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 35)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 40, 50)
-    btn.Text = text .. ": " .. (default and "ON" or "OFF")
-    btn.TextColor3 = default and Color3.fromRGB(82, 251, 246) or Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 14
-    btn.Parent = parent
-    
-    local state = default
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = text .. ": " .. (state and "ON" or "OFF")
-        btn.TextColor3 = state and Color3.fromRGB(82, 251, 246) or Color3.fromRGB(200, 200, 200)
-        callback(state)
-    end)
-    
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 6)
-    c.Parent = btn
-    return btn
-end
-
--- Weapon Selector (Cycle)
-local WeaponBtn = Instance.new("TextButton")
-WeaponBtn.Size = UDim2.new(1, 0, 0, 35)
-WeaponBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 50)
-WeaponBtn.Text = "Weapon: " .. Settings.WeaponType
-WeaponBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-WeaponBtn.Font = Enum.Font.Gotham
-WeaponBtn.TextSize = 14
-WeaponBtn.Parent = FarmPage
-Instance.new("UICorner").Parent = WeaponBtn
-
-WeaponBtn.MouseButton1Click:Connect(function()
-    local types = {"Melee", "Sword", "Blox Fruit"}
-    local current = table.find(types, Settings.WeaponType)
-    Settings.WeaponType = types[current % 3 + 1]
-    WeaponBtn.Text = "Weapon: " .. Settings.WeaponType
-end)
-
--- Bring Mob Toggle
-CreateToggle(FarmPage, "Bring Mobs", false, function(val)
-    Settings.BringMob = val
-end)
-
--- Event Page Placeholder
-CreateToggle(EventPage, "AUTO EGG HUNT", false, function(val)
-    print("Egg Hunt Status:", val)
-end)
-
---- LOGIC CORE ---
-
--- 1. Auto Equip Logic
-task.spawn(function()
-    while task.wait(0.5) do
-        pcall(function()
-            if Settings.BringMob then -- Берем в руки только если фарм активен
-                local char = player.Character
-                if char and not char:FindFirstChildOfClass("Tool") then
-                    for _, tool in ipairs(player.Backpack:GetChildren()) do
-                        if tool:IsA("Tool") and (tool.ToolTip == Settings.WeaponType or string.find(tool.Name, Settings.WeaponType)) then
-                            char.Humanoid:EquipTool(tool)
-                        end
+-- 1. Функция стягивания (BringMob)
+local function BringMobsFunc()
+    for _, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+        if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+            if v:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("HumanoidRootPart") then
+                local dist = (v.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                if dist <= _G.Settings.Distance then
+                    v.HumanoidRootPart.CanCollide = false
+                    -- Телепортируем моба перед игроком
+                    v.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                    
+                    -- Чтобы мобы не "разлетались" (базовая фишка открытых скриптов)
+                    if v.HumanoidRootPart:FindFirstChild("BodyVelocity") then
+                        v.HumanoidRootPart.BodyVelocity:Destroy()
                     end
                 end
             end
-        end)
+        end
     end
-end)
+end
 
--- 2. Bring Mob Logic
+-- 2. Функция выбора оружия
+local function EquipWeapon()
+    local tool = player.Backpack:FindFirstChild(_G.Settings.WeaponType) or player.Character:FindFirstChild(_G.Settings.WeaponType)
+    
+    -- Если по ToolTip (стандарт для Blox Fruits)
+    if not tool then
+        for _, v in pairs(player.Backpack:GetChildren()) do
+            if v:IsA("Tool") and (v.ToolTip == _G.Settings.WeaponType or string.find(v.Name, _G.Settings.WeaponType)) then
+                tool = v
+                break
+            end
+        end
+    end
+    
+    if tool and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid:EquipTool(tool)
+    end
+end
+
+--- UI ЭЛЕМЕНТЫ ---
+
+local function AddButton(parent, text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.Gotham
+    btn.Parent = parent
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- Кнопка выбора оружия
+local WeaponSelector = AddButton(FarmPage, "Weapon: " .. _G.Settings.WeaponType, function()
+    local types = {"Melee", "Sword", "Blox Fruit"}
+    local index = table.find(types, _G.Settings.WeaponType) or 1
+    _G.Settings.WeaponType = types[index % 3 + 1]
+    FarmPage:FindFirstChild("WeaponSelector").Text = "Weapon: " .. _G.Settings.WeaponType
+end)
+WeaponSelector.Name = "WeaponSelector"
+
+-- Переключатель BringMob
+local BringToggle = AddButton(FarmPage, "Bring Mobs: OFF", function()
+    _G.Settings.BringMob = not _G.Settings.BringMob
+    FarmPage:FindFirstChild("BringToggle").Text = "Bring Mobs: " .. (_G.Settings.BringMob and "ON" or "OFF")
+    FarmPage:FindFirstChild("BringToggle").TextColor3 = _G.Settings.BringMob and Color3.fromHex("#52fbf6") or Color3.fromRGB(255, 255, 255)
+end)
+BringToggle.Name = "BringToggle"
+
+--- LOOPS ---
+
 task.spawn(function()
     while task.wait() do
-        if Settings.BringMob then
-            pcall(function()
-                local char = player.Character
-                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-                
-                local myRoot = char.HumanoidRootPart
-                local enemies = workspace:FindFirstChild("Enemies") or workspace:FindFirstChild("NPCs")
-                
-                if enemies then
-                    for _, monster in pairs(enemies:GetChildren()) do
-                        if monster:FindFirstChild("Humanoid") and monster.Humanoid.Health > 0 then
-                            local monsterRoot = monster:FindFirstChild("HumanoidRootPart")
-                            if monsterRoot then
-                                local dist = (monsterRoot.Position - myRoot.Position).Magnitude
-                                if dist <= Settings.Distance then
-                                    -- Стягиваем моба к себе
-                                    monsterRoot.CanCollide = false
-                                    monsterRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -5)
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
+        if _G.Settings.BringMob then
+            pcall(BringMobsFunc)
         end
     end
 end)
 
--- Navigation
-local function ShowPage(name)
-    for _, p in pairs(Pages:GetChildren()) do
-        if p:IsA("ScrollingFrame") then
-            p.Visible = (p.Name == name)
+task.spawn(function()
+    while task.wait(0.5) do
+        if _G.Settings.BringMob then -- Достаем оружие только при включенном стягивании
+            pcall(EquipWeapon)
         end
     end
-end
+end)
 
-local function CreateTab(name, pos)
-    local tab = Instance.new("TextButton")
-    tab.Size = UDim2.new(1, -10, 0, 30)
-    tab.Position = UDim2.new(0, 5, 0, pos)
-    tab.BackgroundColor3 = Color3.fromRGB(40, 50, 60)
-    tab.BackgroundTransparency = 0.8
-    tab.Text = name
-    tab.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tab.Font = Enum.Font.Gotham
-    tab.Parent = NavBar
-    Instance.new("UICorner").Parent = tab
-    tab.MouseButton1Click:Connect(function() ShowPage(name) end)
-end
-
-CreateTab("Farm", 50)
-CreateTab("Event", 85)
+print("Nixes Hub Base Loaded!")
