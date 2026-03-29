@@ -110,7 +110,7 @@ local RUNNING = false
 local TARGET_NAME = "_PrimaryPart"
 
 -- SPEED INCREASED
-local SPEED = 120
+local SPEED = 400
 local Y_OFFSET = 5
 
 -- Auto Egg Hunt
